@@ -1,10 +1,16 @@
 {
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
-  "extends": "standard-with-typescript",
+  "plugins": ["@typescript-eslint", "react"],
+  "extends": ["plugin:react/recommended", "standard-with-typescript"],
   "parserOptions": {
     "project": "./tsconfig.json"
   },
+  "include": ["**/*.config.js"],
   "rules": {
     "@typescript-eslint/consistent-type-definitions": "off",
     "@typescript-eslint/strict-boolean-expressions": "off",
@@ -12,6 +18,8 @@
     "@typescript-eslint/camelcase": "off",
     "space-before-function-paren": "off",
     "comma-dangle": "off",
-    "@typescript-eslint/indent": "off"
+    "@typescript-eslint/indent": "off",
+    "react/jsx-uses-react": "error",
+    "react/jsx-uses-cars": "error"
   }
 }
