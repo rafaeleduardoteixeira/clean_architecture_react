@@ -8,10 +8,10 @@
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "noEmit": true,
     "jsx": "react",
     "baseUrl": "src",
     "rootDir": "src",
+    "allowSyntheticDefaultImports": true,
     "paths": {
       "@/*": ["*"]
     },
