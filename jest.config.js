@@ -7,7 +7,8 @@ module.exports = {
     '.+\\.(ts|tsx)$': 'ts-jest',
   },
   moduleNameMapper: {
+    '\\.(css|less|scss|sass|jpg|jpeg|png|gif|webp|svg|jp?g|png|svg|gif|raw|webp|mpg|mp4|mp3|avi|ogv|ogg|wmv|amv|webm)$':
+      'identity-obj-proxy',
     '@/(.*)': '<rootDir>/src/$1',
-    '\\.scss$': 'indentity-obj-proxy',
   },
 }

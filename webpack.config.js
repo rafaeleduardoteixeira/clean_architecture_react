@@ -21,7 +21,7 @@ module.exports = {
         test: /\.ts(x?)$/,
         loader: 'ts-loader',
         exclude: /node_modules/,
-      }, 
+      },
       {
         test: /\.scss$/,
         use: [
@@ -30,13 +30,13 @@ module.exports = {
           { loader: 'sass-loader' },
         ],
         exclude: /node_modules/,
-      }, 
+      },
     ],
   },
   devServer: {
     static: 'public',
     devMiddleware: {
-      writeToDisk: true
+      writeToDisk: true,
     },
     historyApiFallback: true,
   },
