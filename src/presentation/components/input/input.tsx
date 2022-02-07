@@ -32,10 +32,14 @@ const Input: React.FC<Props> = (props: Props) => {
       />
       <span
         data-testid={`${props.name}-status`}
-        title={stateLogin[`${props.name}Error`]}
+        title={
+          stateLogin[`${props.name}Error`]
+            ? stateLogin[`${props.name}Error`]
+            : ''
+        }
         className={Styles.status}
       >
-        🔴
+        {stateLogin[`${props.name}Error`] ? '🔴' : '🟢'}
       </span>
     </div>
   )
