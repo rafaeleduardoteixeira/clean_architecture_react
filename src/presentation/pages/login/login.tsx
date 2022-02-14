@@ -9,20 +9,28 @@ import { Validation } from '@/presentation/protocols/validation'
 
 import Styles from './login-styles.scss'
 import formContext from '@/presentation/components/context/form/form-context'
+import { Authentication } from '@/domain/usecases'
+import { Link, useNavigate } from 'react-router-dom'
 
 type LoginProps = {
   validation?: Validation
+  authentication?: Authentication
 }
 
-const Login: React.FC<LoginProps> = ({ validation }: LoginProps) => {
+const Login: React.FC<LoginProps> = ({
+  validation,
+  authentication,
+}: LoginProps) => {
   const [stateLogin, setStateLogin] = useState({
     isLoading: false,
-    messagemError: '',
+    messageError: '',
     email: '',
     password: '',
     emailError: '',
     passwordError: '',
   })
+
+  const navigate = useNavigate()
 
   useEffect(() => {
     setStateLogin({
@@ -34,11 +42,45 @@ const Login: React.FC<LoginProps> = ({ validation }: LoginProps) => {
     validation.validate('password', stateLogin.password)
   }, [stateLogin.password, stateLogin.email])
 
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
+    event.preventDefault()
+
+    try {
+      if (
+        stateLogin.isLoading ||
+        stateLogin.emailError ||
+        stateLogin.passwordError
+      ) {
+        return
+      }
+      setStateLogin({ ...stateLogin, isLoading: true })
+
+      const account = await authentication.auth({
+        email: stateLogin.email,
+        password: stateLogin.password,
+      })
+      localStorage.setItem('accessToken', account.acessToken)
+      navigate('/', { replace: true })
+    } catch (error) {
+      setStateLogin({
+        ...stateLogin,
+        isLoading: false,
+        messageError: error.message,
+      })
+    }
+  }
+
   return (
     <div className={Styles.login}>
       <LoginHeader />
       <formContext.Provider value={{ stateLogin, setStateLogin }}>
-        <form className={Styles.form}>
+        <form
+          data-testid="form"
+          className={Styles.form}
+          onSubmit={handleSubmit}
+        >
           <h2>Login</h2>
           <Input type="email" name="email" placeholder="Digite seu e-mail" />
           <Input
@@ -50,11 +92,13 @@ const Login: React.FC<LoginProps> = ({ validation }: LoginProps) => {
             className={Styles.submit}
             type="submit"
             data-testid="submitButton"
-            disabled
+            disabled={!!stateLogin.emailError || !!stateLogin.passwordError}
           >
             Entrar
           </button>
-          <span className={Styles.link}>Criar conta</span>
+          <Link to="/signup" data-testid="signup" className={Styles.link}>
+            Criar conta
+          </Link>
           <FormStatus />
         </form>
       </formContext.Provider>
