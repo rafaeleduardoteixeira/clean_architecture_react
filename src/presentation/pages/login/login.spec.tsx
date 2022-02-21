@@ -1,36 +1,51 @@
 import faker from 'faker'
 import React from 'react'
+import { BrowserRouter } from 'react-router-dom'
+import { createMemoryHistory } from 'history'
 import {
   render,
   RenderResult,
   fireEvent,
   cleanup,
+  waitFor,
 } from '@testing-library/react'
+import 'jest-localstorage-mock'
 import Login from './login'
-import { ValidationSpy } from '@/presentation/test'
+
+import { ValidationSpy, AuthenticationSpy } from '@/presentation/test'
+import { UnexpectedError } from '@/domain/usecases/errors'
+import { act } from 'react-dom/test-utils'
 
 type SubTypes = {
   sut: RenderResult
   email: string
   password: string
   validationSpy: ValidationSpy
+  authenticationSpy: AuthenticationSpy
 }
 
+const history = createMemoryHistory()
 const makeSut = (): SubTypes => {
   const validationSpy = new ValidationSpy()
   const errorMessage = faker.random.words()
   validationSpy.errorMessage = errorMessage
 
-  const sut = render(<Login validation={validationSpy} />)
+  const authenticationSpy = new AuthenticationSpy()
+
+  const sut = render(
+    <BrowserRouter>
+      <Login validation={validationSpy} authentication={authenticationSpy} />
+    </BrowserRouter>
+  )
   const email = faker.internet.email()
   const password = faker.internet.password()
 
-  return { sut, email, password, validationSpy }
+  return { sut, email, password, validationSpy, authenticationSpy }
 }
 
 describe('Login Component', () => {
   afterEach(cleanup)
-
+  beforeEach(() => localStorage.clear())
   test('Should initial state ', () => {
     const { sut, validationSpy } = makeSut()
     const errorWrap = sut.getByTestId('error-wrap')
@@ -90,5 +105,156 @@ describe('Login Component', () => {
 
     expect(emailStatus.title).toBe('')
     expect(emailStatus.textContent).toBe('🟢')
+  })
+
+  test('Should enable submit button if form is valid ', () => {
+    const { sut, password, email, validationSpy } = makeSut()
+    validationSpy.errorMessage = null
+
+    const passwordInput = sut.getByTestId('password')
+    const emailInput = sut.getByTestId('email')
+
+    fireEvent.input(passwordInput, { target: { value: password } })
+    fireEvent.input(emailInput, { target: { value: email } })
+
+    const submitButton = sut.getByTestId('submitButton') as HTMLButtonElement
+    expect(submitButton.disabled).toBe(false)
+  })
+  test('Should show spinner on submit ', async () => {
+    const { sut, password, email, validationSpy } = makeSut()
+    validationSpy.errorMessage = null
+
+    const passwordInput = sut.getByTestId('password')
+    const emailInput = sut.getByTestId('email')
+
+    fireEvent.input(passwordInput, { target: { value: password } })
+    fireEvent.input(emailInput, { target: { value: email } })
+
+    const submitButton = sut.getByTestId('submitButton') as HTMLButtonElement
+
+    fireEvent.click(submitButton)
+
+    await waitFor(() => sut.getByTestId('spinner'))
+
+    const spinner = sut.getByTestId('spinner')
+    expect(spinner).toBeTruthy()
+  })
+
+  test('Should call authentication with correct values ', async () => {
+    const { sut, password, email, validationSpy, authenticationSpy } = makeSut()
+    validationSpy.errorMessage = null
+
+    const passwordInput = sut.getByTestId('password')
+    const emailInput = sut.getByTestId('email')
+
+    fireEvent.input(passwordInput, { target: { value: password } })
+    fireEvent.input(emailInput, { target: { value: email } })
+
+    const submitButton = sut.getByTestId('submitButton') as HTMLButtonElement
+
+    fireEvent.click(submitButton)
+
+    await waitFor(() => sut.getByTestId('spinner'))
+
+    expect(authenticationSpy.params).toEqual({
+      email,
+      password,
+    })
+  })
+
+  test('Should call authentication only once ', async () => {
+    const { sut, password, email, validationSpy, authenticationSpy } = makeSut()
+    validationSpy.errorMessage = null
+
+    const passwordInput = sut.getByTestId('password')
+    const emailInput = sut.getByTestId('email')
+
+    fireEvent.input(passwordInput, { target: { value: password } })
+    fireEvent.input(emailInput, { target: { value: email } })
+
+    const submitButton = sut.getByTestId('submitButton') as HTMLButtonElement
+
+    fireEvent.click(submitButton)
+    fireEvent.click(submitButton)
+
+    await waitFor(() => sut.getByTestId('spinner'))
+
+    expect(authenticationSpy.callsCount).toBe(1)
+  })
+
+  test('Should not call authentication if form invalid ', () => {
+    const { sut, password, email, validationSpy, authenticationSpy } = makeSut()
+    validationSpy.errorMessage = faker.random.words()
+
+    const emailInput = sut.getByTestId('email')
+    fireEvent.input(emailInput, { target: { value: email } })
+
+    fireEvent.submit(sut.getByTestId('form'))
+
+    expect(authenticationSpy.callsCount).toBe(0)
+  })
+
+  test('Should present error if call authentication fail', async () => {
+    const { sut, password, email, validationSpy, authenticationSpy } = makeSut()
+    validationSpy.errorMessage = null
+
+    const error = new UnexpectedError()
+    jest
+      .spyOn(authenticationSpy, 'auth')
+      .mockReturnValueOnce(Promise.reject(error))
+
+    const passwordInput = sut.getByTestId('password')
+    const emailInput = sut.getByTestId('email')
+
+    fireEvent.input(passwordInput, { target: { value: password } })
+    fireEvent.input(emailInput, { target: { value: email } })
+
+    const submitButton = sut.getByTestId('submitButton') as HTMLButtonElement
+    fireEvent.click(submitButton)
+
+    const errorWrap = sut.getByTestId('error-wrap')
+    await waitFor(() => errorWrap)
+
+    const messageError = sut.getByTestId('error-message')
+
+    expect(messageError.textContent).toBe(error.message)
+  })
+
+  test('Should add acessToken on localstorage if success', async () => {
+    const { sut, password, email, validationSpy, authenticationSpy } = makeSut()
+    validationSpy.errorMessage = null
+
+    const passwordInput = sut.getByTestId('password')
+    const emailInput = sut.getByTestId('email')
+
+    fireEvent.input(passwordInput, { target: { value: password } })
+    fireEvent.input(emailInput, { target: { value: email } })
+
+    const submitButton = sut.getByTestId('submitButton') as HTMLButtonElement
+    fireEvent.click(submitButton)
+
+    fireEvent.submit(await waitFor(() => sut.getByTestId('form')))
+
+    expect(localStorage.setItem).toHaveBeenCalledWith(
+      'accessToken',
+      authenticationSpy.account.acessToken
+    )
+
+    expect(window.history.length).toBe(1)
+    expect(window.location.pathname).toBe('/')
+  })
+
+  test('Should go to signup page', async () => {
+    const { sut, validationSpy, authenticationSpy } = makeSut()
+    validationSpy.errorMessage = null
+
+    const register = sut.getByTestId('signup')
+
+    act(() => {
+      fireEvent.click(register)
+    })
+
+    expect(window.history.length).toBe(2)
+    expect(window.location.pathname).toBe('/signup')
   })
 })
