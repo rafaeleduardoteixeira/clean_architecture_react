@@ -14,6 +14,7 @@ import Login from './login'
 
 import { ValidationSpy, AuthenticationSpy } from '@/presentation/test'
 import { UnexpectedError } from '@/domain/usecases/errors'
+import { act } from 'react-dom/test-utils'
 
 type SubTypes = {
   sut: RenderResult
@@ -45,7 +46,6 @@ const makeSut = (): SubTypes => {
 describe('Login Component', () => {
   afterEach(cleanup)
   beforeEach(() => localStorage.clear())
-
   test('Should initial state ', () => {
     const { sut, validationSpy } = makeSut()
     const errorWrap = sut.getByTestId('error-wrap')
@@ -120,8 +120,7 @@ describe('Login Component', () => {
     const submitButton = sut.getByTestId('submitButton') as HTMLButtonElement
     expect(submitButton.disabled).toBe(false)
   })
-
-  test('Should show spinner on submit ', () => {
+  test('Should show spinner on submit ', async () => {
     const { sut, password, email, validationSpy } = makeSut()
     validationSpy.errorMessage = null
 
@@ -132,13 +131,16 @@ describe('Login Component', () => {
     fireEvent.input(emailInput, { target: { value: email } })
 
     const submitButton = sut.getByTestId('submitButton') as HTMLButtonElement
+
     fireEvent.click(submitButton)
+
+    await waitFor(() => sut.getByTestId('spinner'))
 
     const spinner = sut.getByTestId('spinner')
     expect(spinner).toBeTruthy()
   })
 
-  test('Should call authentication with correct values ', () => {
+  test('Should call authentication with correct values ', async () => {
     const { sut, password, email, validationSpy, authenticationSpy } = makeSut()
     validationSpy.errorMessage = null
 
@@ -149,7 +151,10 @@ describe('Login Component', () => {
     fireEvent.input(emailInput, { target: { value: email } })
 
     const submitButton = sut.getByTestId('submitButton') as HTMLButtonElement
+
     fireEvent.click(submitButton)
+
+    await waitFor(() => sut.getByTestId('spinner'))
 
     expect(authenticationSpy.params).toEqual({
       email,
@@ -157,7 +162,7 @@ describe('Login Component', () => {
     })
   })
 
-  test('Should call authentication only once ', () => {
+  test('Should call authentication only once ', async () => {
     const { sut, password, email, validationSpy, authenticationSpy } = makeSut()
     validationSpy.errorMessage = null
 
@@ -168,8 +173,11 @@ describe('Login Component', () => {
     fireEvent.input(emailInput, { target: { value: email } })
 
     const submitButton = sut.getByTestId('submitButton') as HTMLButtonElement
+
     fireEvent.click(submitButton)
     fireEvent.click(submitButton)
+
+    await waitFor(() => sut.getByTestId('spinner'))
 
     expect(authenticationSpy.callsCount).toBe(1)
   })
@@ -242,7 +250,9 @@ describe('Login Component', () => {
 
     const register = sut.getByTestId('signup')
 
-    fireEvent.click(register)
+    act(() => {
+      fireEvent.click(register)
+    })
 
     expect(window.history.length).toBe(2)
     expect(window.location.pathname).toBe('/signup')
