@@ -10,7 +10,7 @@ import {
   waitFor,
 } from '@testing-library/react'
 import 'jest-localstorage-mock'
-import Login from './login'
+import { Login } from '@/presentation/pages/index'
 
 import { ValidationSpy, AuthenticationSpy } from '@/presentation/test'
 import { UnexpectedError } from '@/domain/usecases/errors'
