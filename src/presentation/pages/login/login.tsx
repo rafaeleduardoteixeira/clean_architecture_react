@@ -13,8 +13,8 @@ import { Authentication } from '@/domain/usecases'
 import { Link, useNavigate } from 'react-router-dom'
 
 type LoginProps = {
-  validation?: Validation
-  authentication?: Authentication
+  validation: Validation
+  authentication: Authentication
 }
 
 const Login: React.FC<LoginProps> = ({
