@@ -7,7 +7,7 @@ type Props = React.DetailedHTMLProps<
   HTMLInputElement
 >
 
-const Input: React.FC<Props> = (props: Props) => {
+const Input = (props: Props) => {
   const { stateLogin, setStateLogin } = useContext(formContext)
 
   const enableInput = (event: React.FocusEvent<HTMLInputElement>): void => {
