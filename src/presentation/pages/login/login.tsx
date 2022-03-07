@@ -17,10 +17,7 @@ type LoginProps = {
   authentication: Authentication
 }
 
-const Login: React.FC<LoginProps> = ({
-  validation,
-  authentication,
-}: LoginProps) => {
+const Login = ({ validation, authentication }: LoginProps): JSX.Element => {
   const [stateLogin, setStateLogin] = useState({
     isLoading: false,
     messageError: '',
