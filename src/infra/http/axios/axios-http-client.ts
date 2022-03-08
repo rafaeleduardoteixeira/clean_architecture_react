@@ -11,7 +11,7 @@ export class AxiosHttpClient implements HttpPostClient<any, any> {
     try {
       httpResponse = await axios.post(params.url, params.body)
     } catch (error) {
-      httpResponse = error.reponse
+      httpResponse = error.response
     }
     return {
       statusCode: httpResponse.status,

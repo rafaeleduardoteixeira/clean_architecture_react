@@ -9,10 +9,13 @@ import {
   cleanup,
   waitFor,
 } from '@testing-library/react'
-import 'jest-localstorage-mock'
 import { Login } from '@/presentation/pages/index'
 
-import { ValidationSpy, AuthenticationSpy } from '@/presentation/test'
+import {
+  ValidationSpy,
+  AuthenticationSpy,
+  SaveAccessTokenSpy,
+} from '@/presentation/test'
 import { UnexpectedError } from '@/domain/usecases/errors'
 import { act } from 'react-dom/test-utils'
 
@@ -22,11 +25,13 @@ type SubTypes = {
   password: string
   validationSpy: ValidationSpy
   authenticationSpy: AuthenticationSpy
+  saveAccessTokenSpy: SaveAccessTokenSpy
 }
 
 const history = createMemoryHistory()
 const makeSut = (): SubTypes => {
   const validationSpy = new ValidationSpy()
+  const saveAccessTokenSpy = new SaveAccessTokenSpy()
   const errorMessage = faker.random.words()
   validationSpy.errorMessage = errorMessage
 
@@ -34,18 +39,28 @@ const makeSut = (): SubTypes => {
 
   const sut = render(
     <BrowserRouter>
-      <Login validation={validationSpy} authentication={authenticationSpy} />
+      <Login
+        validation={validationSpy}
+        authentication={authenticationSpy}
+        saveAccessToken={saveAccessTokenSpy}
+      />
     </BrowserRouter>
   )
   const email = faker.internet.email()
   const password = faker.internet.password()
 
-  return { sut, email, password, validationSpy, authenticationSpy }
+  return {
+    sut,
+    email,
+    password,
+    validationSpy,
+    authenticationSpy,
+    saveAccessTokenSpy,
+  }
 }
 
 describe('Login Component', () => {
   afterEach(cleanup)
-  beforeEach(() => localStorage.clear())
   test('Should initial state ', () => {
     const { sut, validationSpy } = makeSut()
     const errorWrap = sut.getByTestId('error-wrap')
@@ -221,7 +236,14 @@ describe('Login Component', () => {
   })
 
   test('Should add acessToken on localstorage if success', async () => {
-    const { sut, password, email, validationSpy, authenticationSpy } = makeSut()
+    const {
+      sut,
+      password,
+      email,
+      validationSpy,
+      authenticationSpy,
+      saveAccessTokenSpy,
+    } = makeSut()
     validationSpy.errorMessage = null
 
     const passwordInput = sut.getByTestId('password')
@@ -235,8 +257,7 @@ describe('Login Component', () => {
 
     fireEvent.submit(await waitFor(() => sut.getByTestId('form')))
 
-    expect(localStorage.setItem).toHaveBeenCalledWith(
-      'accessToken',
+    expect(saveAccessTokenSpy.accessToken).toBe(
       authenticationSpy.account.acessToken
     )
 
